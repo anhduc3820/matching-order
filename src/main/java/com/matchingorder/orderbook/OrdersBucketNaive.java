@@ -15,10 +15,8 @@
  */
 package com.matchingorder.orderbook;
 
-import com.matchingorder.common.IOrder;
 import com.matchingorder.common.MatcherTradeEvent;
 import com.matchingorder.common.Order;
-import com.matchingorder.common.OrderAction;
 import com.matchingorder.utils.SerializationUtils;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -30,7 +28,6 @@ import net.openhft.chronicle.bytes.WriteBytesMarshallable;
 
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 @Slf4j
 @ToString
@@ -87,89 +84,12 @@ public final class OrdersBucketNaive implements Comparable<OrdersBucketNaive>, W
     }
 
     /**
-     * Collect a list of matching orders starting from eldest records
-     * Completely matching orders will be removed, partially matched order kept in the bucked.
-     *
-     * @param volumeToCollect - volume to collect
-     * @param activeOrder     - for getReserveBidPrice
-     * @param helper          - events helper
-     * @return - total matched volume, events, completed orders to remove
-     */
-    public MatcherResult match(long volumeToCollect, IOrder activeOrder, OrderBookEventsHelper helper) {
-
-//        log.debug("---- match: {}", volumeToCollect);
-
-        final Iterator<Map.Entry<Long, Order>> iterator = entries.entrySet().iterator();
-
-        long totalMatchingVolume = 0;
-
-        final List<Long> ordersToRemove = new ArrayList<>();
-
-        MatcherTradeEvent eventsHead = null;
-        MatcherTradeEvent eventsTail = null;
-
-        // iterate through all orders
-        while (iterator.hasNext() && volumeToCollect > 0) {
-            final Map.Entry<Long, Order> next = iterator.next();
-            final Order order = next.getValue();
-
-            // calculate exact volume can fill for this order
-//            log.debug("volumeToCollect={} order: s{} f{}", volumeToCollect, order.size, order.filled);
-            final long v = Math.min(volumeToCollect, order.size - order.filled);
-            totalMatchingVolume += v;
-//            log.debug("totalMatchingVolume={} v={}", totalMatchingVolume, v);
-
-            order.filled += v;
-            volumeToCollect -= v;
-            totalVolume -= v;
-
-            // remove from order book filled orders
-            final boolean fullMatch = order.size == order.filled;
-
-            final long bidderHoldPrice = order.action == OrderAction.ASK ? activeOrder.getReserveBidPrice() : order.reserveBidPrice;
-            final MatcherTradeEvent tradeEvent = helper.sendTradeEvent(order, fullMatch, volumeToCollect == 0, v, bidderHoldPrice);
-
-            if (eventsTail == null) {
-                eventsHead = tradeEvent;
-            } else {
-                eventsTail.nextEvent = tradeEvent;
-            }
-            eventsTail = tradeEvent;
-
-            if (fullMatch) {
-                ordersToRemove.add(order.orderId);
-                iterator.remove();
-            }
-        }
-
-        return new MatcherResult(eventsHead, eventsTail, totalMatchingVolume, ordersToRemove);
-    }
-
-    /**
      * Get number of orders in the bucket
      *
      * @return number of orders in the bucket
      */
     public int getNumOrders() {
         return entries.size();
-    }
-
-    /**
-     * Reduce size of the order
-     *
-     * @param reduceSize - size to reduce (difference)
-     */
-    public void reduceSize(long reduceSize) {
-
-        totalVolume -= reduceSize;
-    }
-
-    public void validate() {
-        long sum = entries.values().stream().mapToLong(c -> c.size - c.filled).sum();
-        if (sum != totalVolume) {
-            String msg = String.format("totalVolume=%d calculated=%d", totalVolume, sum);
-            throw new IllegalStateException(msg);
-        }
     }
 
     public Order findOrder(long orderId) {
@@ -193,14 +113,6 @@ public final class OrdersBucketNaive implements Comparable<OrdersBucketNaive>, W
      */
     public void forEachOrder(Consumer<Order> consumer) {
         entries.values().forEach(consumer);
-    }
-
-    public String dumpToSingleLine() {
-        String orders = getAllOrders().stream()
-                .map(o -> String.format("id%d_L%d_F%d", o.orderId, o.size, o.filled))
-                .collect(Collectors.joining(", "));
-
-        return String.format("%d : vol:%d num:%d : %s", getPrice(), getTotalVolume(), getNumOrders(), orders);
     }
 
     @Override

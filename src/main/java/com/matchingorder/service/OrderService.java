@@ -48,17 +48,7 @@ public class OrderService {
                 return;
 
             ApiPlaceOrder apiPlaceOrder = orderParse.parserApiPlaceOrder(newSingleOrderRequest);
-            CompletableFuture<CommandResultCode> future = api.submitCommandAsync(apiPlaceOrder);
-
-            // Convert Execution Report
-            ExecutionReport executionReport = orderParse.parseNewOrderExecutionReport(newSingleOrderRequest);
-            future.thenApply(result -> {
-                if (result.getCode() == CommandResultCode.SUCCESS.getCode()) {
-                    if (executionReport != null)
-                        sendMessageToClient(account, executionReport);
-                }
-                return null;
-            });
+            api.submitCommandAsync(apiPlaceOrder);
         } catch (Exception e) {
             log.error("Handle newSingleOrderRequest failed with message: {}", LogUtils.formatFixMessageLog(message), e);
         }
@@ -77,18 +67,8 @@ public class OrderService {
             if (isInvalidSymbol(symbol) || account.isEmpty())
                 return;
 
-            // Convert Execution Report
-            ExecutionReport executionReport = orderParse.parseOrderCancelExecutionReport(orderCancelRequest);
             ApiCancelOrder apiCancelOrder = orderParse.parserApiCancelOrder(orderCancelRequest);
-            CompletableFuture<CommandResultCode> future = api.submitCommandAsync(apiCancelOrder);
-            future.thenApply(result -> {
-                if (result.getCode() == CommandResultCode.SUCCESS.getCode()) {
-                    if (executionReport != null)
-                        sendMessageToClient(account, executionReport);
-                }
-                return null;
-            });
-            sendMessageToClient(orderCancelRequest.getAccount().getValue(), executionReport);
+            api.submitCommandAsync(apiCancelOrder);
         } catch (Exception e) {
             log.error("Handle OrderCancelRequest failed with message: {}", LogUtils.formatFixMessageLog(message), e);
         }

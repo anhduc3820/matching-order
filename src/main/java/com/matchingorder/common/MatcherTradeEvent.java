@@ -16,13 +16,12 @@
 package com.matchingorder.common;
 
 
+import com.matchingorder.orderbook.OrderBookDirectImpl;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 // TODO move activeOrderCompleted, eventType, section into the order?
@@ -62,6 +61,8 @@ public final class MatcherTradeEvent {
     // frozen price from BID order owner (depends on activeOrderAction)
     public long bidderHoldPrice;
 
+    public OrderBookDirectImpl.DirectOrder directOrder;
+
     // reference to next event in chain
     public MatcherTradeEvent nextEvent;
 
@@ -77,8 +78,8 @@ public final class MatcherTradeEvent {
         evt.matchedOrderCompleted = this.matchedOrderCompleted;
         evt.price = this.price;
         evt.size = this.size;
-//        evt.timestamp = this.timestamp;
         evt.bidderHoldPrice = this.bidderHoldPrice;
+        evt.directOrder = this.directOrder;
         return evt;
     }
 
@@ -91,16 +92,6 @@ public final class MatcherTradeEvent {
         return tail;
     }
 
-    public int getChainSize() {
-        MatcherTradeEvent tail = this;
-        int c = 1;
-        while (tail.nextEvent != null) {
-            tail = tail.nextEvent;
-            c++;
-        }
-        return c;
-    }
-
     @NotNull
     public static MatcherTradeEvent createEventChain(int chainLength) {
         final MatcherTradeEvent head = new MatcherTradeEvent();
@@ -111,17 +102,6 @@ public final class MatcherTradeEvent {
             prev = nextEvent;
         }
         return head;
-    }
-
-
-    // testing only
-    public static List<MatcherTradeEvent> asList(MatcherTradeEvent next) {
-        List<MatcherTradeEvent> list = new ArrayList<>();
-        while (next != null) {
-            list.add(next);
-            next = next.nextEvent;
-        }
-        return list;
     }
 
     /**
@@ -175,7 +155,6 @@ public final class MatcherTradeEvent {
                 ", matchedOrderCompleted=" + matchedOrderCompleted +
                 ", price=" + price +
                 ", size=" + size +
-//                ", timestamp=" + timestamp +
                 ", bidderHoldPrice=" + bidderHoldPrice +
                 ", nextEvent=" + (nextEvent != null) +
                 '}';

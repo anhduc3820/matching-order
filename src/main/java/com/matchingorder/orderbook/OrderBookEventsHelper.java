@@ -45,12 +45,8 @@ public final class OrderBookEventsHelper {
                                             final boolean makerCompleted,
                                             final boolean takerCompleted,
                                             final long size,
-                                            final long bidderHoldPrice) {
-        //final long takerOrderTimestamp
-
-//        log.debug("** sendTradeEvent: active id:{} matched id:{}", activeOrder.orderId, matchingOrder.orderId);
-//        log.debug("** sendTradeEvent: price:{} v:{}", price, v);
-
+                                            final long bidderHoldPrice,
+                                            OrderBookDirectImpl.DirectOrder directOrder) {
         final MatcherTradeEvent event = newMatcherEvent();
 
         event.eventType = MatcherEventType.TRADE;
@@ -67,6 +63,9 @@ public final class OrderBookEventsHelper {
 
         // set order reserved price for correct released EBids
         event.bidderHoldPrice = bidderHoldPrice;
+
+        // set order taker
+        event.directOrder = directOrder;
 
         return event;
 

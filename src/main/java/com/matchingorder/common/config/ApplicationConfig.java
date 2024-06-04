@@ -7,6 +7,8 @@ import com.matchingorder.common.config.*;
 import com.matchingorder.event.EngineEvent;
 import com.matchingorder.processors.journaling.DiskSerializationProcessor;
 import com.matchingorder.processors.journaling.DiskSerializationProcessorConfiguration;
+import com.matchingorder.service.OrderParse;
+import com.matchingorder.service.SessionMonitor;
 import com.matchingorder.utils.FileUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +32,10 @@ public class ApplicationConfig {
 
     private CommonResource commonResource;
 
+    private OrderParse orderParse;
+
+    private SessionMonitor sessionMonitor;
+
     @Bean
     public ExchangeCore exchangeCore() {
         InitialStateConfiguration configId = getSnapshotId(commonResource.getSnapshotFolder(), commonResource.getExchangeCoreName());
@@ -40,6 +46,8 @@ public class ApplicationConfig {
 
         // Config EventHandler
         EngineEvent eventHandler = EngineEvent.builder()
+                .orderParse(orderParse)
+                .sessionMonitor(sessionMonitor)
                 .commonResource(commonResource)
                 .build();
 

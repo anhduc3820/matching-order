@@ -3,6 +3,8 @@ package com.matchingorder;
 import com.matchingorder.common.OrderAction;
 import com.matchingorder.common.api.ApiCommand;
 import com.matchingorder.common.cmd.CommandResultCode;
+import com.matchingorder.common.cmd.OrderCommandType;
+import com.matchingorder.orderbook.OrderBookDirectImpl;
 import lombok.Data;
 
 import java.util.List;
@@ -57,6 +59,21 @@ public interface IEventsHandler {
      */
     void orderBook(OrderBook orderBook);
 
+    void orderEvent(OrderEvent orderEvent);
+
+    @Data
+    class OrderEvent {
+        public final int symbol;
+        public final long price;
+        public final long totalVolume;
+        public final long takerOrderId;
+        public final long externalOrder;
+        public final long takerUid;
+        public final OrderAction takerAction;
+        public final long timestamp;
+        public final OrderCommandType state;
+    }
+
     @Data
     class ApiCommandResult {
         public final ApiCommand command;
@@ -73,6 +90,7 @@ public interface IEventsHandler {
         public final OrderAction takerAction;
         public final boolean takeOrderCompleted;
         public final long timestamp;
+        public final OrderBookDirectImpl.DirectOrder directOrder;
         public final List<Trade> trades;
     }
 
@@ -83,6 +101,7 @@ public interface IEventsHandler {
         public final boolean makerOrderCompleted;
         public final long price;
         public final long volume;
+        public final OrderBookDirectImpl.DirectOrder directOrder;
     }
 
     @Data

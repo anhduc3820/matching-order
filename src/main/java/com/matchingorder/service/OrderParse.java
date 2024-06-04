@@ -1,5 +1,6 @@
 package com.matchingorder.service;
 
+import com.matchingorder.IEventsHandler;
 import com.matchingorder.common.CommonResource;
 import com.matchingorder.common.OrderAction;
 import com.matchingorder.common.OrderType;
@@ -29,38 +30,29 @@ public class OrderParse {
 
     private final CommonResource commonResource;
 
-    public ExecutionReport parseNewOrderExecutionReport(NewOrderSingle newOrder) {
-        try {
-            // price required in order type limit
-            BigDecimal ordPrice = newOrder.getOrdType().getValue() == OrdType.LIMIT ?
-                    BigDecimal.valueOf(newOrder.getPrice().getValue()) : null;
-
-            CustomExecutionReport executionReportDto = CustomExecutionReport.builder()
-                    .accountId(Long.parseLong(newOrder.getAccount().getValue()))
-                    .orderId(Long.parseLong(new OrderID("0").getValue())) // required field
-                    .clOrdId(newOrder.getClOrdID().getValue())
-                    .ordType(newOrder.getOrdType())
-                    .execId(1234) // required field
-                    .execTransType(new ExecTransType(ExecTransType.NEW)) // required field
-                    .execType(new ExecType(ExecType.NEW)) // required field
-                    .ordStatus(new OrdStatus(OrdStatus.NEW))
-                    .symbol(newOrder.getSymbol().getValue())
-                    .securityExchange("TEST")
-                    .orderQty((long) newOrder.getOrderQty().getValue())
-                    .side(newOrder.getSide())
-                    .currencyCode("USD")
-                    .ordPrice(ordPrice)
-                    .leaveQty(0L) // required field
-                    .cumQty(0L) // required field
-                    .avgPrice(BigDecimal.valueOf(new AvgPx((0)).getValue())) // required field
-                    .build();
-
-            return executionReportDto.buildExecutionReport();
-        } catch (Exception e) {
-            log.error("NewOrderSingle convert execution report to FIX format with newOrder: {}, throw exception: {}",
-                    LogUtils.formatFixMessageLog(newOrder), e);
-            return null;
-        }
+    public ExecutionReport parseNewOrderExecutionReport(IEventsHandler.OrderEvent orderEvent) {
+        // price required in order type limit
+        BigDecimal ordPrice = BigDecimal.valueOf(orderEvent.price);
+        CustomExecutionReport executionReportDto = CustomExecutionReport.builder()
+                .accountId(orderEvent.takerUid)
+                .orderId(orderEvent.externalOrder) // required field
+                .clOrdId(String.valueOf(orderEvent.takerOrderId))
+                .ordType(new OrdType(OrdType.LIMIT))
+                .execId(1234) // required field
+                .execTransType(new ExecTransType(ExecTransType.NEW)) // required field
+                .execType(new ExecType(ExecType.NEW)) // required field
+                .ordStatus(new OrdStatus(OrdStatus.NEW))
+                .symbol("AAPL")
+                .securityExchange("TEST")
+                .orderQty(orderEvent.totalVolume)
+                .side(orderEvent.takerAction.equals(OrderAction.ASK) ? new Side(Side.SELL) : new Side(BUY))
+                .currencyCode("USD")
+                .ordPrice(ordPrice)
+                .leaveQty(0L) // required field
+                .cumQty(0L) // required field
+                .avgPrice(BigDecimal.valueOf(new AvgPx((0)).getValue())) // required field
+                .build();
+        return executionReportDto.buildExecutionReport();
     }
 
     @SneakyThrows
@@ -109,31 +101,25 @@ public class OrderParse {
         }
     }
 
-    public ExecutionReport parseOrderCancelExecutionReport(OrderCancelRequest newOrder) {
-        try {
-            CustomExecutionReport executionReportDto = CustomExecutionReport.builder()
-                    .accountId(Long.parseLong(newOrder.getAccount().getValue()))
-                    .origClOrdId(newOrder.getOrigClOrdID().getValue())
-                    .clOrdId(newOrder.getClOrdID().getValue())
-                    .execId(0) // required field
-                    .execTransType(new ExecTransType(ExecTransType.CANCEL)) // required field
-                    .execType(new ExecType(ExecType.CANCELED)) // required field
-                    .ordStatus(new OrdStatus(OrdStatus.CANCELED))
-                    .symbol(newOrder.getSymbol().getValue())
-                    .securityExchange("USAH")
-                    .orderQty(0L)
-                    .side(newOrder.getSide())
-                    .currencyCode("USD")
-                    .leaveQty(0L) // required field
-                    .cumQty(0L) // required field
-                    .avgPrice(BigDecimal.valueOf(new AvgPx((0)).getValue())) // required field
-                    .build();
+    public ExecutionReport parseOrderCancelExecutionReport(IEventsHandler.OrderEvent orderEvent) {
+        CustomExecutionReport executionReportDto = CustomExecutionReport.builder()
+                .accountId(orderEvent.takerUid)
+                .orderId(orderEvent.externalOrder)
+                .clOrdId(String.valueOf(orderEvent.takerOrderId))
+                .execId(0) // required field
+                .execTransType(new ExecTransType(ExecTransType.CANCEL)) // required field
+                .execType(new ExecType(ExecType.CANCELED)) // required field
+                .ordStatus(new OrdStatus(OrdStatus.CANCELED))
+                .symbol("AAPL")
+                .securityExchange("USAH")
+                .orderQty(0L)
+                .side(orderEvent.takerAction.equals(OrderAction.ASK) ? new Side(Side.SELL) : new Side(BUY))
+                .currencyCode("USD")
+                .leaveQty(0L) // required field
+                .cumQty(0L) // required field
+                .avgPrice(BigDecimal.valueOf(new AvgPx((0)).getValue())) // required field
+                .build();
 
-            return executionReportDto.buildExecutionReport();
-        } catch (Exception e) {
-            log.error("OrderCancelRequest convert execution report to FIX format with newOrder: {}, throw exception: {}",
-                    LogUtils.formatFixMessageLog(newOrder), e);
-            return null;
-        }
+        return executionReportDto.buildExecutionReport();
     }
 }

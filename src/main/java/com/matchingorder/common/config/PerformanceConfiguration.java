@@ -4,7 +4,6 @@ package com.matchingorder.common.config;
 import com.matchingorder.common.CoreWaitStrategy;
 import com.matchingorder.orderbook.IOrderBook;
 import com.matchingorder.orderbook.OrderBookDirectImpl;
-import com.matchingorder.orderbook.OrderBookNaiveImpl;
 import com.matchingorder.utils.AffinityThreadFactory;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -104,7 +103,7 @@ public final class PerformanceConfiguration {
                 .threadFactory(Thread::new)
                 .waitStrategy(CoreWaitStrategy.BLOCKING)
                 .binaryCommandsLz4CompressorFactory(() -> LZ4Factory.fastestInstance().highCompressor())
-                .orderBookFactory(OrderBookNaiveImpl::new);
+                .orderBookFactory(OrderBookDirectImpl::new);
     }
 
     public static PerformanceConfiguration.PerformanceConfigurationBuilder latencyPerformanceBuilder() {

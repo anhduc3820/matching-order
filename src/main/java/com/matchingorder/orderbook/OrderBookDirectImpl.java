@@ -122,29 +122,11 @@ public final class OrderBookDirectImpl implements IOrderBook {
 
 
     private void newOrderPlaceGtc(final OrderCommand cmd) {
-        final long size = cmd.size;
-
-        // check if order is marketable there are matching orders
-        final long filledSize = tryMatchInstantly(cmd, cmd);
-        if (filledSize == size) {
-            // completed before being placed - can just return
-            return;
-        }
-
-        final long orderId = cmd.orderId;
-        // TODO eliminate double hashtable lookup?
-        if (orderIdIndex.get(orderId) != null) { // containsKey for hashtable
-            // duplicate order id - can match, but can not place
-            eventsHelper.attachRejectEvent(cmd, size - filledSize);
-            log.warn("duplicate order id: {}", cmd);
-            return;
-        }
-
-        final long price = cmd.price;
-
         // normally placing regular GTC order
         final DirectOrder orderRecord = objectsPool.get(ObjectsPool.DIRECT_ORDER, (Supplier<DirectOrder>) DirectOrder::new);
-
+        final long size = cmd.size;
+        final long price = cmd.price;
+        final long orderId = cmd.orderId;
         orderRecord.orderId = orderId;
         orderRecord.price = price;
         orderRecord.size = size;
@@ -152,7 +134,22 @@ public final class OrderBookDirectImpl implements IOrderBook {
         orderRecord.action = cmd.action;
         orderRecord.uid = cmd.uid;
         orderRecord.timestamp = cmd.timestamp;
-        orderRecord.filled = filledSize;
+        cmd.directOrder = orderRecord;
+
+        // check if order is marketable there are matching orders
+        orderRecord.filled = tryMatchInstantly(cmd, cmd);
+        if (orderRecord.filled == size) {
+            // completed before being placed - can just return
+            return;
+        }
+
+        // TODO eliminate double hashtable lookup?
+        if (orderIdIndex.get(orderId) != null) { // containsKey for hashtable
+            // duplicate order id - can match, but can not place
+            eventsHelper.attachRejectEvent(cmd, size - orderRecord.filled);
+            log.warn("duplicate order id: {}", cmd);
+            return;
+        }
 
         orderIdIndex.put(orderId, orderRecord);
         insertOrder(orderRecord, null);
@@ -250,20 +247,12 @@ public final class OrderBookDirectImpl implements IOrderBook {
         DirectOrder priceBucketTail = makerOrder.parent.tail;
 
         final long takerReserveBidPrice = takerOrder.getReserveBidPrice();
-//        final long takerOrderTimestamp = takerOrder.getTimestamp();
-
-//        log.debug("MATCHING taker: {} remainingSize={}", takerOrder, remainingSize);
-
         MatcherTradeEvent eventsTail = null;
 
         // iterate through all orders
         do {
-
-//            log.debug("  matching from maker order: {}", makerOrder);
-
             // calculate exact volume can fill for this order
             final long tradeSize = Math.min(remainingSize, makerOrder.size - makerOrder.filled);
-//                log.debug("  tradeSize: {} MIN(remainingSize={}, makerOrder={})", tradeSize, remainingSize, makerOrder.size - makerOrder.filled);
 
             makerOrder.filled += tradeSize;
             makerOrder.parent.volume -= tradeSize;
@@ -276,7 +265,7 @@ public final class OrderBookDirectImpl implements IOrderBook {
             }
 
             final MatcherTradeEvent tradeEvent = eventsHelper.sendTradeEvent(makerOrder, makerCompleted, remainingSize == 0, tradeSize,
-                    isBidAction ? takerReserveBidPrice : makerOrder.reserveBidPrice);
+                    isBidAction ? takerReserveBidPrice : makerOrder.reserveBidPrice, makerOrder);
 
             if (eventsTail == null) {
                 triggerCmd.matcherEvent = tradeEvent;
@@ -287,7 +276,6 @@ public final class OrderBookDirectImpl implements IOrderBook {
 
             if (!makerCompleted) {
                 // maker not completed -> no unmatched volume left, can exit matching loop
-//                    log.debug("  not completed, exit");
                 break;
             }
 
@@ -301,7 +289,6 @@ public final class OrderBookDirectImpl implements IOrderBook {
                 final LongAdaptiveRadixTreeMap<Bucket> buckets = isBidAction ? askPriceBuckets : bidPriceBuckets;
                 buckets.remove(makerOrder.price);
                 objectsPool.put(ObjectsPool.DIRECT_BUCKET, makerOrder.parent);
-//                log.debug("  removed price bucket for {}", makerOrder.price);
 
                 // set next price tail (if there is next price)
                 if (makerOrder.prev != null) {
@@ -320,9 +307,6 @@ public final class OrderBookDirectImpl implements IOrderBook {
         if (makerOrder != null) {
             makerOrder.next = null;
         }
-
-//        log.debug("makerOrder = {}", makerOrder);
-//        log.debug("makerOrder.parent = {}", makerOrder != null ? makerOrder.parent : null);
 
         // update best orders reference
         if (isBidAction) {
@@ -353,7 +337,7 @@ public final class OrderBookDirectImpl implements IOrderBook {
 
         // fill action fields (for events handling)
         cmd.action = order.getAction();
-
+        cmd.size = order.getSize() - order.getFilled();
         cmd.matcherEvent = eventsHelper.sendReduceEvent(order, order.getSize() - order.getFilled(), true);
 
         return CommandResultCode.SUCCESS;
@@ -842,8 +826,6 @@ public final class OrderBookDirectImpl implements IOrderBook {
         // public int userCookie;
 
         public DirectOrder(BytesIn bytes) {
-
-
             this.orderId = bytes.readLong(); // orderId
             this.price = bytes.readLong();  // price
             this.size = bytes.readLong(); // size
@@ -852,9 +834,6 @@ public final class OrderBookDirectImpl implements IOrderBook {
             this.action = OrderAction.of(bytes.readByte());
             this.uid = bytes.readLong(); // uid
             this.timestamp = bytes.readLong(); // timestamp
-            // this.userCookie = bytes.readInt();  // userCookie
-
-            // TODO
         }
 
         @Override
@@ -867,25 +846,19 @@ public final class OrderBookDirectImpl implements IOrderBook {
             bytes.writeByte(action.getCode());
             bytes.writeLong(uid);
             bytes.writeLong(timestamp);
-            // bytes.writeInt(userCookie);
-            // TODO
         }
 
         @Override
         public String toString() {
-            return "[" + orderId + " " + (action == OrderAction.ASK ? 'A' : 'B')
-                    + price + ":" + size + "F" + filled
-                    // + " C" + userCookie
-                    + " U" + uid + "]";
+            return "[" + orderId + " => " + (action == OrderAction.ASK ? "ASK: " : "BID: ")
+                    + price + " | size: " + size + " | Fill: " + filled
+                    + " | uid: " + uid + "]";
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(orderId, action, price, size, reserveBidPrice, filled,
-                    //userCookie,
-                    uid);
+            return Objects.hash(orderId, action, price, size, reserveBidPrice, filled, uid);
         }
-
 
         /**
          * timestamp is not included into hashCode() and equals() for repeatable results
@@ -910,9 +883,7 @@ public final class OrderBookDirectImpl implements IOrderBook {
 
         @Override
         public int stateHash() {
-            return Objects.hash(orderId, action, price, size, reserveBidPrice, filled,
-                    //userCookie,
-                    uid);
+            return Objects.hash(orderId, action, price, size, reserveBidPrice, filled, uid);
         }
     }
 

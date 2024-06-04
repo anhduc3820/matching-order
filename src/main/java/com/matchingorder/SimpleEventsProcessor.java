@@ -81,7 +81,8 @@ public class SimpleEventsProcessor implements ObjLongConsumer<OrderCommand> {
                         evt.matchedOrderUid,
                         evt.matchedOrderCompleted,
                         evt.price,
-                        evt.size);
+                        evt.size,
+                        evt.directOrder);
 
                 trades.add(trade);
                 mutableLong.value += evt.size;
@@ -112,6 +113,7 @@ public class SimpleEventsProcessor implements ObjLongConsumer<OrderCommand> {
                     cmd.action,
                     takerOrderCompleted.value,
                     cmd.timestamp,
+                    cmd.directOrder,
                     trades);
 
             eventsHandler.tradeEvent(evt);
@@ -139,6 +141,10 @@ public class SimpleEventsProcessor implements ObjLongConsumer<OrderCommand> {
         }
     }
 
+    private void sendOrderEvents(OrderCommand cmd) {
+        eventsHandler.orderEvent(new IEventsHandler.OrderEvent(cmd.symbol, cmd.price, cmd.size, cmd.orderId, cmd.externalOrderId, cmd.uid, cmd.action, cmd.timestamp, cmd.command));
+    }
+
 
     private void sendCommandResult(OrderCommand cmd, long seq) {
 
@@ -157,6 +163,9 @@ public class SimpleEventsProcessor implements ObjLongConsumer<OrderCommand> {
                         cmd.resultCode,
                         cmd.timestamp,
                         seq);
+
+                // send order event
+                sendOrderEvents(cmd);
                 break;
 
             case MOVE_ORDER:
@@ -165,6 +174,8 @@ public class SimpleEventsProcessor implements ObjLongConsumer<OrderCommand> {
 
             case CANCEL_ORDER:
                 sendApiCommandResult(new ApiCancelOrder(cmd.orderId, cmd.uid, cmd.symbol), cmd.resultCode, cmd.timestamp, seq);
+                // send order event
+                sendOrderEvents(cmd);
                 break;
 
             case REDUCE_ORDER:
