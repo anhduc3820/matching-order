@@ -430,6 +430,7 @@ public final class ExchangeApi {
         cmd.reserveBidPrice = api.reservePrice;
         cmd.size = api.size;
         cmd.orderId = api.orderId;
+        cmd.externalOrderId = api.externalOrderId;
         cmd.timestamp = api.timestamp;
         cmd.action = api.action;
         cmd.orderType = api.orderType;

@@ -1,8 +1,10 @@
 package com.matchingorder.common;
 
+import com.matchingorder.utils.Snowflake;
 import lombok.Getter;
 import org.apache.commons.collections4.bidimap.DualHashBidiMap;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -36,5 +38,10 @@ public class CommonResource {
 
     public String getSymbolCode(String symbol) {
         return mapSymbols.getKey(symbol);
+    }
+
+    @Bean
+    public Snowflake snowflake() {
+        return new Snowflake(69);
     }
 }

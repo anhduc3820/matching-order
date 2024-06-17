@@ -46,6 +46,7 @@ public final class MatcherTradeEvent {
     // maker (for TRADE event type only)
     public long matchedOrderId;
     public long matchedOrderUid; // 0 for rejection
+    public long matchedExternalOrderUid; // 0 for rejection
     public boolean matchedOrderCompleted; // false, except when matchedOrder is completely filled
 
     // actual price of the deal (from maker order), 0 for rejection (price can be take from original order)
@@ -74,6 +75,7 @@ public final class MatcherTradeEvent {
         evt.section = this.section;
         evt.activeOrderCompleted = this.activeOrderCompleted;
         evt.matchedOrderId = this.matchedOrderId;
+        evt.matchedExternalOrderUid = this.matchedExternalOrderUid;
         evt.matchedOrderUid = this.matchedOrderUid;
         evt.matchedOrderCompleted = this.matchedOrderCompleted;
         evt.price = this.price;

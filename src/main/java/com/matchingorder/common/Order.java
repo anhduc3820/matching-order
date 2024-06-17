@@ -41,6 +41,9 @@ public final class Order implements WriteBytesMarshallable, IOrder {
     public long orderId;
 
     @Getter
+    public long externalOrderId;
+
+    @Getter
     public long price;
 
     @Getter
@@ -63,12 +66,9 @@ public final class Order implements WriteBytesMarshallable, IOrder {
     @Getter
     public long timestamp;
 
-//    public int userCookie;
-
     public Order(BytesIn bytes) {
-
-
         this.orderId = bytes.readLong(); // orderId
+        this.externalOrderId = bytes.readLong(); // orderId
         this.price = bytes.readLong();  // price
         this.size = bytes.readLong(); // size
         this.filled = bytes.readLong(); // filled
@@ -76,13 +76,12 @@ public final class Order implements WriteBytesMarshallable, IOrder {
         this.action = OrderAction.of(bytes.readByte());
         this.uid = bytes.readLong(); // uid
         this.timestamp = bytes.readLong(); // timestamp
-//        this.userCookie = bytes.readInt();  // userCookie
-
     }
 
     @Override
     public void writeMarshallable(BytesOut bytes) {
         bytes.writeLong(orderId);
+        bytes.writeLong(externalOrderId);
         bytes.writeLong(price);
         bytes.writeLong(size);
         bytes.writeLong(filled);
@@ -90,7 +89,6 @@ public final class Order implements WriteBytesMarshallable, IOrder {
         bytes.writeByte(action.getCode());
         bytes.writeLong(uid);
         bytes.writeLong(timestamp);
-//        bytes.writeInt(userCookie);
     }
 
     @Override

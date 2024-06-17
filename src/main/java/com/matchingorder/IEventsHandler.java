@@ -66,6 +66,7 @@ public interface IEventsHandler {
         public final int symbol;
         public final long price;
         public final long totalVolume;
+        public final long fillVolume;
         public final long takerOrderId;
         public final long externalOrder;
         public final long takerUid;
@@ -86,6 +87,7 @@ public interface IEventsHandler {
         public final int symbol;
         public final long totalVolume;
         public final long takerOrderId;
+        public final long externalOrder;
         public final long takerUid;
         public final OrderAction takerAction;
         public final boolean takeOrderCompleted;
@@ -97,6 +99,7 @@ public interface IEventsHandler {
     @Data
     class Trade {
         public final long makerOrderId;
+        public final long externalOrder;
         public final long makerUid;
         public final boolean makerOrderCompleted;
         public final long price;

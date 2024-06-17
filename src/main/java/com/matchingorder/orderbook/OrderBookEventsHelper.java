@@ -47,17 +47,15 @@ public final class OrderBookEventsHelper {
                                             final long size,
                                             final long bidderHoldPrice,
                                             OrderBookDirectImpl.DirectOrder directOrder) {
-        final MatcherTradeEvent event = newMatcherEvent();
 
+        final MatcherTradeEvent event = newMatcherEvent();
         event.eventType = MatcherEventType.TRADE;
         event.section = 0;
-
         event.activeOrderCompleted = takerCompleted;
-
         event.matchedOrderId = matchingOrder.getOrderId();
+        event.matchedExternalOrderUid = matchingOrder.getExternalOrderId();
         event.matchedOrderUid = matchingOrder.getUid();
         event.matchedOrderCompleted = makerCompleted;
-
         event.price = matchingOrder.getPrice();
         event.size = size;
 

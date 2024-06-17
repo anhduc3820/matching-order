@@ -30,6 +30,7 @@ public final class ApiPlaceOrder extends ApiCommand {
     public final long price;
     public final long size;
     public final long orderId;
+    public final long externalOrderId;
     public final OrderAction action;
     public final OrderType orderType;
     public final long uid;

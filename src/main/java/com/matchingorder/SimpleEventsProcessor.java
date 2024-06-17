@@ -78,6 +78,7 @@ public class SimpleEventsProcessor implements ObjLongConsumer<OrderCommand> {
 
                 final IEventsHandler.Trade trade = new IEventsHandler.Trade(
                         evt.matchedOrderId,
+                        evt.matchedExternalOrderUid,
                         evt.matchedOrderUid,
                         evt.matchedOrderCompleted,
                         evt.price,
@@ -109,6 +110,7 @@ public class SimpleEventsProcessor implements ObjLongConsumer<OrderCommand> {
                     cmd.symbol,
                     mutableLong.value,
                     cmd.orderId,
+                    cmd.externalOrderId,
                     cmd.uid,
                     cmd.action,
                     takerOrderCompleted.value,
@@ -142,7 +144,7 @@ public class SimpleEventsProcessor implements ObjLongConsumer<OrderCommand> {
     }
 
     private void sendOrderEvents(OrderCommand cmd) {
-        eventsHandler.orderEvent(new IEventsHandler.OrderEvent(cmd.symbol, cmd.price, cmd.size, cmd.orderId, cmd.externalOrderId, cmd.uid, cmd.action, cmd.timestamp, cmd.command));
+        eventsHandler.orderEvent(new IEventsHandler.OrderEvent(cmd.symbol, cmd.price, cmd.size, cmd.directOrder.filled ,cmd.orderId, cmd.externalOrderId, cmd.uid, cmd.action, cmd.timestamp, cmd.command));
     }
 
 
@@ -154,6 +156,7 @@ public class SimpleEventsProcessor implements ObjLongConsumer<OrderCommand> {
                                 cmd.price,
                                 cmd.size,
                                 cmd.orderId,
+                                cmd.externalOrderId,
                                 cmd.action,
                                 cmd.orderType,
                                 cmd.uid,

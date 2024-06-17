@@ -30,6 +30,7 @@ public class CustomExecutionReport {
     private long leaveQty;
     private long cumQty;
     private BigDecimal avgPrice;
+    private BigDecimal lastShares;
     private String currencyCode;
 
     public ExecutionReport buildExecutionReport() {
@@ -49,9 +50,11 @@ public class CustomExecutionReport {
         executionReport.set(new OrderQty(orderQty));
         executionReport.set(side);
         if (currencyCode != null) executionReport.set(new Currency(currencyCode));
+        if (lastShares != null) executionReport.set(new LastShares(lastShares.longValue()));
         executionReport.set(new LeavesQty(leaveQty));
         executionReport.set(new CumQty(cumQty));
         executionReport.set(new AvgPx(avgPrice.doubleValue()));
+        executionReport.set(new LastPx(avgPrice.doubleValue()));
         executionReport.set(new SecurityExchange(securityExchange));
         executionReport.set(new TimeInForce(TimeInForce.DAY));
         executionReport.set(new TransactTime());

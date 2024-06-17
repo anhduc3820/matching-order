@@ -29,6 +29,8 @@ public interface IOrder extends StateHash {
 
     long getOrderId();
 
+    long getExternalOrderId();
+
     long getTimestamp();
 
     long getReserveBidPrice();

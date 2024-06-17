@@ -30,6 +30,10 @@ public class EngineEvent implements IEventsHandler {
     @Override
     public void tradeEvent(TradeEvent tradeEvent) {
         log.info("TRADE EVENT: {}", tradeEvent);
+        sendMessageToClient(String.valueOf(tradeEvent.takerUid), orderParse.parseOrderTradeExecutionReport(tradeEvent));
+        tradeEvent.getTrades().forEach(trade -> {
+            sendMessageToClient(String.valueOf(trade.makerUid), orderParse.parseOrderTradeExecutionReport(trade, tradeEvent));
+        });
     }
 
     @Override

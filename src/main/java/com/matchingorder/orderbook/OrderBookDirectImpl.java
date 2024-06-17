@@ -128,6 +128,7 @@ public final class OrderBookDirectImpl implements IOrderBook {
         final long price = cmd.price;
         final long orderId = cmd.orderId;
         orderRecord.orderId = orderId;
+        orderRecord.externalOrderId = cmd.externalOrderId;
         orderRecord.price = price;
         orderRecord.size = size;
         orderRecord.reserveBidPrice = cmd.reserveBidPrice;
@@ -338,7 +339,9 @@ public final class OrderBookDirectImpl implements IOrderBook {
         // fill action fields (for events handling)
         cmd.action = order.getAction();
         cmd.size = order.getSize() - order.getFilled();
+        cmd.externalOrderId = order.externalOrderId;
         cmd.matcherEvent = eventsHelper.sendReduceEvent(order, order.getSize() - order.getFilled(), true);
+        cmd.directOrder = order;
 
         return CommandResultCode.SUCCESS;
     }
@@ -790,6 +793,9 @@ public final class OrderBookDirectImpl implements IOrderBook {
         public long orderId;
 
         @Getter
+        public long externalOrderId;
+
+        @Getter
         public long price;
 
         @Getter
@@ -827,6 +833,7 @@ public final class OrderBookDirectImpl implements IOrderBook {
 
         public DirectOrder(BytesIn bytes) {
             this.orderId = bytes.readLong(); // orderId
+            this.externalOrderId = bytes.readLong(); // orderId
             this.price = bytes.readLong();  // price
             this.size = bytes.readLong(); // size
             this.filled = bytes.readLong(); // filled
@@ -839,6 +846,7 @@ public final class OrderBookDirectImpl implements IOrderBook {
         @Override
         public void writeMarshallable(BytesOut bytes) {
             bytes.writeLong(orderId);
+            bytes.writeLong(externalOrderId);
             bytes.writeLong(price);
             bytes.writeLong(size);
             bytes.writeLong(filled);
